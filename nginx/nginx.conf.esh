@@ -9,12 +9,6 @@ map $server_port $x_forwarded_host {
     443     $host;
 }
 
-# Metric exporters
-<% if [ "$ENVIRONMENT" = "production" ]; then -%>
-    include exporters.conf;
-<% fi; -%>
-
-
 <% if [ "$TLS_MODE" != "off" ]; then -%>
     server {
         server_name <%= $GITLAB_SITE_HOST %>;
@@ -76,21 +70,19 @@ server {
     location /.well-known/acme-challenge/ {
         root /var/www/local_static/;
     }
-
-
     <% if [ "$ENVIRONMENT" = "production" ]; then -%>
-	    location @frontend {
-            include frontend;
-	    }
+            location @gitlab {
+                include gitlab;
+            }
 
-	location / {
+        location / {
             <% if [ "$HTPASSWD_MODE" != "off" ]; then -%>
             auth_basic "Restricted Content";
             auth_basic_user_file /etc/nginx/.htpasswd;
             <% fi; -%>
-	        root /var/www/local_static/;
-	        try_files $uri @gitlab;
-	    }
+                root /var/www/local_static/;
+                try_files $uri @gitlab;
+            }
     <% fi; -%>
 
 }

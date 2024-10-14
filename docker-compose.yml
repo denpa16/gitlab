@@ -7,14 +7,17 @@ services:
     restart: always
     depends_on:
       - db
+      - gitlab
     volumes:
+      - nginx_cache:/var/lib/nginx/proxy_cache
+      - static:/var/www/static/:ro
+      - api_cache:/var/lib/nginx/api_cache
       - local_static:/var/www/local_static/
       - acme.sh:/acme.sh:delegated
       - certs:/etc/nginx/certs
     environment:
       - ENVIRONMENT=production
       - GITLAB_SITE_HOST
-      - GITLAB_REGISTRY_SITE_HOST
       - HTPASSWD
       - HTPASSWD_MODE
     ports:
@@ -22,8 +25,6 @@ services:
       - 443:443
     logging:
       driver: journald
-      options:
-        tag: nginx
 
   db:
     restart: always
@@ -70,6 +71,34 @@ services:
       options:
         tag: db
 
+  gitlab:
+    image: gitlab/gitlab-ee:16.2.4-ee.0
+    volumes:
+      - gitlab-data:/var/opt/gitlab
+      - gitlab-logs:/var/log/gitlab
+      - gitlab-config:/etc/gitlab
+    shm_size: "256m"
+    ports:
+      - 8000:8000
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost:8000'
+        gitlab_rails['gitlab_shell_ssh_port'] = ${GITLAB_SHELL_SSH_PORT}
+        gitlab_rails['db_adapter'] = "${POSTGRES_TYPE}"
+        gitlab_rails['db_encoding'] = "unicode"
+        gitlab_rails['db_host'] = "db"
+        gitlab_rails['db_database'] = "${POSTGRES_NAME}"
+        gitlab_rails['db_username'] = "${POSTGRES_USER}"
+        gitlab_rails['db_password'] = "${POSTGRES_PASSWORD}"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 240s
+    restart: unless-stopped
+    depends_on:
+      - db
 
 volumes:
   local_static:
@@ -80,3 +109,6 @@ volumes:
   postgresdata:
   api_cache:
   nginx_cache:
+  gitlab-data:
+  gitlab-logs:
+  gitlab-config:

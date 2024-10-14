@@ -20,6 +20,7 @@ services:
       - GITLAB_SITE_HOST
       - HTPASSWD
       - HTPASSWD_MODE
+      - TLS_MODE
     ports:
       - 80:80
       - 443:443
@@ -90,6 +91,12 @@ services:
         gitlab_rails['db_database'] = "${POSTGRES_NAME}"
         gitlab_rails['db_username'] = "${POSTGRES_USER}"
         gitlab_rails['db_password'] = "${POSTGRES_PASSWORD}"
+        registry_external_url 'http://localhost:5000'
+        gitlab_rails['registry_enabled'] = true
+        gitlab_rails['api_url'] = 'https://${REGISTRY_HOST_NAME}'
+        registry['enable'] = true
+        registry_nginx['enable'] = false
+        registry['registry_http_addr'] = "0.0.0.0:5000"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/" ]
       interval: 10s
@@ -99,6 +106,22 @@ services:
     restart: unless-stopped
     depends_on:
       - db
+
+  registry:
+    image: registry:latest
+    restart: always
+    ports:
+      - 5000:5000
+    environment:
+      # - REGISTRY_AUTH=htpasswd
+      # - REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm
+      # - REGISTRY_AUTH_HTPASSWD_PATH=/auth/.htpasswd
+      - REGISTRY_LOG_LEVEL=debug
+      - REGISTRY_STORAGE=filesystem
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+      - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=var/lib/registry
+    volumes:
+    - ./data:/var/lib/registry
 
 volumes:
   local_static:

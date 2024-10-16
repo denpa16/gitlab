@@ -81,6 +81,7 @@ services:
     shm_size: "256m"
     ports:
       - 8000:8000
+      - 4443:443
     environment:
       VIRTUAL_HOST: ${GITLAB_HOST_NAME}
       GITLAB_OMNIBUS_CONFIG: |
@@ -130,6 +131,16 @@ services:
       - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=var/lib/registry
     volumes:
     - ./data:/var/lib/registry
+
+  runner:
+    image: gitlab/gitlab-runner:alpine
+    restart: always
+    hostname: runner-1
+    depends_on:
+      - gitlab
+    volumes:
+     - ./config/gitlab-runner:/etc/gitlab-runner
+     - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   local_static:

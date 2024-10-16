@@ -82,8 +82,16 @@ services:
     ports:
       - 8000:8000
     environment:
+      VIRTUAL_HOST: ${GITLAB_HOST_NAME}
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://localhost:8000'
+        external_url 'https://${GITLAB_HOST_NAME}'
+        letsencrypt['enable'] = false
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        nginx['proxy_set_headers'] = {
+            "X-Forwarded-Proto" => "https",
+            "X-Forwarded-Ssl" => "on"
+        }
         gitlab_rails['gitlab_shell_ssh_port'] = ${GITLAB_SHELL_SSH_PORT}
         gitlab_rails['db_adapter'] = "${POSTGRES_TYPE}"
         gitlab_rails['db_encoding'] = "unicode"

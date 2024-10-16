@@ -18,6 +18,7 @@ services:
     environment:
       - ENVIRONMENT=production
       - GITLAB_SITE_HOST
+      - REGISTRY_SITE_HOST
       - HTPASSWD
       - HTPASSWD_MODE
       - TLS_MODE
